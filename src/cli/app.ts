@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { doctorCommand } from "./commands/doctor.js";
+import { initCommand } from "./commands/init.js";
 
 export function createApp(): Command {
   const program = new Command();
@@ -9,9 +10,10 @@ export function createApp(): Command {
     .description("Golden path enforcer: bootstrap projetos completos e maduros.")
     .version("0.1.0");
 
+
+  program.addCommand(initCommand());
   program.addCommand(doctorCommand());
 
-  // padrão: mostrar help se não passar nada
   program.action(() => {
     program.help();
   });

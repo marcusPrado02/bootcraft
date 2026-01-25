@@ -20,6 +20,8 @@ export type BootcraftErrorCode =
   | "GENERATOR_FAILED"
   | "GENERATOR_STEP_FAILED"
   | "JSON_MERGE_FAILED"
+  | "INIT_OUTPUT_NOT_EMPTY"
+  | "INIT_FAILED"
   | "FS_ERROR"; // Generic filesystem error
 
 /**
