@@ -22,6 +22,7 @@ export type BootcraftErrorCode =
   | "JSON_MERGE_FAILED"
   | "INIT_OUTPUT_NOT_EMPTY"
   | "INIT_FAILED"
+  | "DOCTOR_FAILED"
   | "FS_ERROR"; // Generic filesystem error
 
 /**
