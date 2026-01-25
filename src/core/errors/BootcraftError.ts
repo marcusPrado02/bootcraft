@@ -17,6 +17,9 @@ export type BootcraftErrorCode =
   | "PACK_HASH_FAILED" // Failed to hash pack contents
   | "TEMPLATE_TARGET_EXISTS" // target file exists and force=false
   | "TEMPLATE_RENDER_FAILED" // generic template rendering error
+  | "GENERATOR_FAILED"
+  | "GENERATOR_STEP_FAILED"
+  | "JSON_MERGE_FAILED"
   | "FS_ERROR"; // Generic filesystem error
 
 /**
