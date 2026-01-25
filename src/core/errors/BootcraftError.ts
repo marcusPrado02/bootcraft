@@ -13,6 +13,8 @@ export type BootcraftErrorCode =
   | "REGISTRY_INVALID" // Registry exists but contains invalid JSON/schema
   | "REGISTRY_READ_FAILED" // Failed to read registry file
   | "REGISTRY_WRITE_FAILED" // Failed to write registry file
+  | "PACK_RESOLVE_FAILED" // Failed to resolve pack dir / manifest
+  | "PACK_HASH_FAILED" // Failed to hash pack contents
   | "FS_ERROR"; // Generic filesystem error
 
 /**
