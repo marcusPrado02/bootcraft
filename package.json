@@ -2,7 +2,7 @@
   "name": "bootcraft",
   "version": "0.1.0",
   "private": true,
-  "type": "commonjs",
+  "type": "module",
   "bin": {
     "bootcraft": "dist/index.js"
   },
