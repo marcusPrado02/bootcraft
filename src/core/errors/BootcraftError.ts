@@ -6,6 +6,10 @@ export type BootcraftErrorCode =
   | "STATE_INVALID" // State file exists but contains invalid JSON or schema
   | "STATE_READ_FAILED" // Failed to read state file (permissions, etc.)
   | "STATE_WRITE_FAILED" // Failed to write state file
+    | "MANIFEST_NOT_FOUND" // Neither pack.yaml nor archetype.yaml exists
+  | "MANIFEST_READ_FAILED" // Failed to read manifest (permissions, etc.)
+  | "MANIFEST_YAML_INVALID" // YAML parse error
+  | "MANIFEST_SCHEMA_INVALID" // Manifest parsed but schema invalid
   | "FS_ERROR"; // Generic filesystem error
 
 /**
