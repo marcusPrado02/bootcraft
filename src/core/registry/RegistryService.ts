@@ -60,7 +60,7 @@ function parseRegistryJson(path: string, raw: string): BootcraftRegistry {
   if (
     typeof parsed !== "object" ||
     parsed === null ||
-    (parsed as any).schemaVersion !== "0.1" ||
+    (parsed as any).schemaVersion  !== "0.1" ||
     !Array.isArray((parsed as any).packs)
   ) {
     throw new BootcraftError(
