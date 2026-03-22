@@ -4,6 +4,7 @@ import { basename, resolve } from "node:path";
 import { BootcraftError } from "../../core/errors/index.js";
 import { createInitService } from "../../core/init/InitService.js";
 import { createCliLogger, resolveLogLevel } from "../output.js";
+import { promptInitAnswers } from "../prompts.js";
 
 function parseKeyValue(input: string): [string, string] {
   const idx = input.indexOf("=");
@@ -14,8 +15,8 @@ function parseKeyValue(input: string): [string, string] {
 export function initCommand(): Command {
   return new Command("init")
     .description("Initialize a new project using the mandatory baseline pack.")
-    .requiredOption("--pack <path>", "Path to the baseline pack directory")
-    .requiredOption("--out <dir>", "Output directory for the generated project")
+    .option("--pack <path>", "Path to the baseline pack directory")
+    .option("--out <dir>", "Output directory for the generated project")
     .option("--archetype <id>", "Archetype id (defaults to first archetype in manifest)")
     .option("--name <serviceName>", "Service/project name (defaults to output folder name)")
     .option("-D, --define <k=v...>", "Define template variables (repeatable)", (v, acc: string[]) => {
@@ -27,17 +28,40 @@ export function initCommand(): Command {
     .option("--verbose", "Show detailed progress output", false)
     .option("--debug", "Show debug-level output (implies --verbose)", false)
     .action(async (opts) => {
-      const outDir = resolve(String(opts.out));
-      const packPath = resolve(String(opts.pack));
-      const archetypeId = opts.archetype ? String(opts.archetype) : undefined;
+      const isInteractive = !opts.pack || !opts.out;
 
+      let packPathRaw: string = opts.pack ?? "";
+      let outDirRaw: string = opts.out ?? "";
+      let serviceNameRaw: string = opts.name ?? "";
+      let forceRaw: boolean = Boolean(opts.force);
+      let extraVars: Record<string, string> = {};
+
+      if (isInteractive) {
+        const answers = await promptInitAnswers({
+          packPath: opts.pack,
+          outDir: opts.out,
+          projectName: opts.name,
+          force: opts.force ? true : undefined,
+        });
+
+        packPathRaw = answers.packPath;
+        outDirRaw = answers.outDir;
+        serviceNameRaw = answers.projectName;
+        forceRaw = answers.force;
+        extraVars = { projectDescription: answers.projectDescription };
+      }
+
+      const outDir = resolve(outDirRaw);
+      const packPath = resolve(packPathRaw);
+      const archetypeId = opts.archetype ? String(opts.archetype) : undefined;
       const inferredName = basename(outDir);
-      const serviceName = String(opts.name ?? inferredName);
+      const serviceName = serviceNameRaw || inferredName;
 
       const defines: string[] = Array.isArray(opts.define) ? opts.define : [];
       const variables: Record<string, string> = {
         serviceName,
         projectName: serviceName,
+        ...extraVars,
       };
 
       for (const def of defines) {
@@ -48,7 +72,6 @@ export function initCommand(): Command {
 
       const logger = createCliLogger(resolveLogLevel(opts));
       const init = createInitService({ logger });
-
       const dryRun = Boolean(opts.dryRun);
 
       if (dryRun) {
@@ -61,7 +84,7 @@ export function initCommand(): Command {
           outDir,
           archetypeId,
           variables,
-          force: Boolean(opts.force),
+          force: forceRaw,
           dryRun,
         });
 
