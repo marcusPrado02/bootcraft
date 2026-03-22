@@ -1,0 +1,70 @@
+openapi: "3.1.0"
+
+info:
+  title: "{{projectName}}"
+  description: "{{projectDescription}}"
+  version: "0.1.0"
+
+servers:
+  - url: "http://localhost:3000"
+    description: "Local development"
+
+paths:
+  /health:
+    get:
+      summary: "Liveness check"
+      description: "Returns 200 if the service is running. Used by liveness probes."
+      operationId: "getHealth"
+      tags:
+        - "Observability"
+      responses:
+        "200":
+          description: "Service is alive"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /ready:
+    get:
+      summary: "Readiness check"
+      description: "Returns 200 if the service is ready to handle traffic."
+      operationId: "getReady"
+      tags:
+        - "Observability"
+      responses:
+        "200":
+          description: "Service is ready"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "503":
+          description: "Service is not ready"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - service
+      properties:
+        status:
+          type: string
+          enum: ["ok", "degraded", "unavailable"]
+          example: "ok"
+        service:
+          type: string
+          example: "{{projectName}}"
+        version:
+          type: string
+          example: "0.1.0"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-01-25T10:00:00Z"
