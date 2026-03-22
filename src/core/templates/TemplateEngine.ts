@@ -73,6 +73,7 @@ function isTextFileByExtension(relPath: string): boolean {
     ".gradle",
     ".gitignore",
     ".editorconfig",
+    ".example",
     ".sh",
     ".bat",
     ".ps1",

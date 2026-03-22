@@ -23,8 +23,8 @@ describe("DoctorService", () => {
     await writeFile(join(dir, "docs", "api", "openapi.yaml"), "openapi: 3.0.0\n", "utf-8");
 
     await mkdir(join(dir, "src", "domain"), { recursive: true });
-    await mkdir(join(dir, "src", "application"), { recursive: true });
-    await mkdir(join(dir, "src", "infrastructure"), { recursive: true });
+    await mkdir(join(dir, "src", "app"), { recursive: true });
+    await mkdir(join(dir, "src", "infra"), { recursive: true });
 
     await mkdir(join(dir, "tests", "unit"), { recursive: true });
 

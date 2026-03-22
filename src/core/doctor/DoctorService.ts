@@ -83,19 +83,19 @@ export function createDoctorService(): DoctorService {
 
         results.push(
           await checkDir(
-            "src-application",
-            "Clean Architecture: application layer exists (src/application)",
-            join(root, "src", "application"),
-            "Create src/application for use-cases and orchestration (commands/queries, DTOs)."
+            "src-app",
+            "Clean Architecture: application layer exists (src/app)",
+            join(root, "src", "app"),
+            "Create src/app for use-cases and orchestration (commands/queries, ports)."
           )
         );
 
         results.push(
           await checkDir(
-            "src-infrastructure",
-            "Ports & Adapters: infrastructure exists (src/infrastructure)",
-            join(root, "src", "infrastructure"),
-            "Create src/infrastructure for adapters (db, messaging, http clients, observability)."
+            "src-infra",
+            "Ports & Adapters: infrastructure layer exists (src/infra)",
+            join(root, "src", "infra"),
+            "Create src/infra for adapters (database, messaging, http clients, observability)."
           )
         );
 
