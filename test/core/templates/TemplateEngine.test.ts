@@ -58,11 +58,112 @@ describe("TemplateEngine", () => {
     const engine = createTemplateEngine();
 
     await expect(
-      engine.render({ templateRoot: root, destDir: out, variables: {}, options: { force: false } })
+      engine.render({ templateRoot: root, destDir: out, variables: {}, options: { force: false } }),
     ).rejects.toMatchObject({
       name: "BootcraftError",
       code: "TEMPLATE_TARGET_EXISTS",
     });
+  });
+
+  it("processes {{#if var}} conditional blocks", async () => {
+    const root = await makeTempDir("bootcraft-tpl-root-");
+    const out = await makeTempDir("bootcraft-tpl-out-");
+
+    await writeFile(
+      join(root, "readme.md"),
+      "start\n{{#if featureA}}\nA is enabled\n{{/if}}\n{{#if featureB}}\nB is enabled\n{{/if}}\nend\n",
+      "utf-8",
+    );
+
+    const engine = createTemplateEngine();
+    await engine.render({
+      templateRoot: root,
+      destDir: out,
+      variables: { featureA: "true", featureB: "false" },
+    });
+
+    const rendered = await readFile(join(out, "readme.md"), "utf-8");
+    expect(rendered).toContain("A is enabled");
+    expect(rendered).not.toContain("B is enabled");
+    expect(rendered).toContain("start");
+    expect(rendered).toContain("end");
+  });
+
+  it("processes {{#unless var}} conditional blocks", async () => {
+    const root = await makeTempDir("bootcraft-tpl-root-");
+    const out = await makeTempDir("bootcraft-tpl-out-");
+
+    await writeFile(
+      join(root, "file.txt"),
+      "{{#unless debug}}\nproduction mode\n{{/unless}}\n",
+      "utf-8",
+    );
+
+    const engine = createTemplateEngine();
+    await engine.render({
+      templateRoot: root,
+      destDir: out,
+      variables: { debug: "" },
+    });
+
+    const rendered = await readFile(join(out, "file.txt"), "utf-8");
+    expect(rendered).toContain("production mode");
+  });
+
+  it("processes {{#each var}} loop blocks", async () => {
+    const root = await makeTempDir("bootcraft-tpl-root-");
+    const out = await makeTempDir("bootcraft-tpl-out-");
+
+    await writeFile(join(root, "list.md"), "{{#each envs}}\n- {{this}}\n{{/each}}\n", "utf-8");
+
+    const engine = createTemplateEngine();
+    await engine.render({
+      templateRoot: root,
+      destDir: out,
+      variables: { envs: "dev,staging,prod" },
+    });
+
+    const rendered = await readFile(join(out, "list.md"), "utf-8");
+    expect(rendered).toContain("- dev");
+    expect(rendered).toContain("- staging");
+    expect(rendered).toContain("- prod");
+  });
+
+  it("applies string helpers like {{camelCase var}}", async () => {
+    const root = await makeTempDir("bootcraft-tpl-root-");
+    const out = await makeTempDir("bootcraft-tpl-out-");
+
+    await writeFile(
+      join(root, "config.ts"),
+      "const name = '{{camelCase projectName}}';\nconst CLASS = '{{pascalCase projectName}}';\nconst KEY = '{{upper projectName}}';\n",
+      "utf-8",
+    );
+
+    const engine = createTemplateEngine();
+    await engine.render({
+      templateRoot: root,
+      destDir: out,
+      variables: { projectName: "my-service" },
+    });
+
+    const rendered = await readFile(join(out, "config.ts"), "utf-8");
+    expect(rendered).toContain("'myService'");
+    expect(rendered).toContain("'MyService'");
+    expect(rendered).toContain("'MY-SERVICE'");
+  });
+
+  it("provides {{year}} and {{date}} as built-in variables", async () => {
+    const root = await makeTempDir("bootcraft-tpl-root-");
+    const out = await makeTempDir("bootcraft-tpl-out-");
+
+    await writeFile(join(root, "adr.md"), "Year: {{year}}\nDate: {{date}}\n", "utf-8");
+
+    const engine = createTemplateEngine();
+    await engine.render({ templateRoot: root, destDir: out, variables: {} });
+
+    const rendered = await readFile(join(out, "adr.md"), "utf-8");
+    expect(rendered).toMatch(/Year: \d{4}/);
+    expect(rendered).toMatch(/Date: \d{4}-\d{2}-\d{2}/);
   });
 
   it("overwrites if target exists and force=true", async () => {

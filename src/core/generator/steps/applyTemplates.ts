@@ -17,7 +17,7 @@ export interface ApplyTemplatesStepParams {
 
 export function applyTemplatesStep(
   params: ApplyTemplatesStepParams,
-  deps?: { engine?: TemplateEngine }
+  deps?: { engine?: TemplateEngine },
 ): Step {
   const engine = deps?.engine ?? createTemplateEngine();
 
@@ -34,9 +34,10 @@ export function applyTemplatesStep(
         options: {
           force: Boolean(params.force),
           dryRun,
-          onFile: dryRun
-            ? (rel) => ctx.logger.info(`  [dry-run] would write: ${rel}`)
-            : undefined,
+          onFile: dryRun ? (rel) => ctx.logger.info(`  [dry-run] would write: ${rel}`) : undefined,
+          warnOnUnresolved: true,
+          onUnresolved: (varName, filePath) =>
+            ctx.logger.warn(`Unresolved variable {{${varName}}} in ${filePath}`),
         },
       });
     },
