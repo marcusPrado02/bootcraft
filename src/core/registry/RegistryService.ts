@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 
 import { BootcraftError } from "../errors/index.js";
 import { atomicWriteFile } from "../../infra/fs/index.js";
+import { compareSemVer } from "../../infra/semver.js";
 import { resolveRegistryPath } from "./paths.js";
 import type { BootcraftRegistry, RegistryPackRecord } from "./types.js";
 
@@ -10,6 +11,7 @@ export interface RegistryService {
   save(registry: BootcraftRegistry): Promise<void>;
   registerPack(input: Omit<RegistryPackRecord, "registeredAt">): Promise<BootcraftRegistry>;
   getPack(id: string, version?: string): Promise<RegistryPackRecord | undefined>;
+  removePack(id: string, version?: string): Promise<{ removed: number }>;
 }
 
 export interface RegistryServiceOptions {
@@ -39,7 +41,7 @@ async function readRegistryFileOrUndefined(path: string): Promise<string | undef
     throw new BootcraftError(
       "REGISTRY_READ_FAILED",
       `Failed to read registry file: ${path}`,
-      err instanceof Error ? err : undefined
+      err instanceof Error ? err : undefined,
     );
   }
 }
@@ -52,7 +54,7 @@ function parseRegistryJson(path: string, raw: string): BootcraftRegistry {
     throw new BootcraftError(
       "REGISTRY_INVALID",
       `Invalid JSON in registry file: ${path}`,
-      err instanceof Error ? err : undefined
+      err instanceof Error ? err : undefined,
     );
   }
 
@@ -60,12 +62,12 @@ function parseRegistryJson(path: string, raw: string): BootcraftRegistry {
   if (
     typeof parsed !== "object" ||
     parsed === null ||
-    (parsed as any).schemaVersion  !== "0.1" ||
+    (parsed as any).schemaVersion !== "0.1" ||
     !Array.isArray((parsed as any).packs)
   ) {
     throw new BootcraftError(
       "REGISTRY_INVALID",
-      `Invalid registry schema in file: ${path} (expected schemaVersion '0.1' and packs[])`
+      `Invalid registry schema in file: ${path} (expected schemaVersion '0.1' and packs[])`,
     );
   }
 
@@ -91,22 +93,38 @@ export function createRegistryService(options: RegistryServiceOptions = {}): Reg
         throw new BootcraftError(
           "REGISTRY_WRITE_FAILED",
           `Failed to write registry file: ${path}`,
-          err instanceof Error ? err : undefined
+          err instanceof Error ? err : undefined,
         );
       }
     },
 
-    async registerPack(input: Omit<RegistryPackRecord, "registeredAt">): Promise<BootcraftRegistry> {
+    async registerPack(
+      input: Omit<RegistryPackRecord, "registeredAt">,
+    ): Promise<BootcraftRegistry> {
       const registry = await this.load();
+
+      // Deduplication by content hash: skip if identical hash already registered
+      const duplicate = registry.packs.find(
+        (p) => p.integrityHash === input.integrityHash && p.id !== input.id,
+      );
+      if (duplicate) {
+        throw new BootcraftError(
+          "REGISTRY_DUPLICATE_HASH",
+          `Pack content is identical to already-registered pack "${duplicate.id}@${duplicate.version}" (hash: ${input.integrityHash.slice(0, 12)}…). ` +
+            `Use a different pack or update its content.`,
+        );
+      }
 
       const record: RegistryPackRecord = {
         ...input,
         registeredAt: nowIso(),
       };
 
-      const idx = registry.packs.findIndex((p) => p.id === record.id && p.version === record.version);
+      const idx = registry.packs.findIndex(
+        (p) => p.id === record.id && p.version === record.version,
+      );
       if (idx >= 0) {
-        registry.packs[idx] = record;
+        registry.packs[idx] = record; // update existing entry (re-register same id@version)
       } else {
         registry.packs.push(record);
       }
@@ -119,11 +137,23 @@ export function createRegistryService(options: RegistryServiceOptions = {}): Reg
       const registry = await this.load();
       if (version) return registry.packs.find((p) => p.id === id && p.version === version);
 
-      // If version is omitted: return the latest by semver-ish fallback? (v0.1 keeps it simple)
-      // We pick the most recently registered record.
+      // No version: return the highest semver-compatible version
       const matches = registry.packs.filter((p) => p.id === id);
       if (matches.length === 0) return undefined;
-      return matches.slice().sort((a, b) => b.registeredAt.localeCompare(a.registeredAt))[0];
+      return matches.slice().sort((a, b) => compareSemVer(b.version, a.version))[0];
+    },
+
+    async removePack(id: string, version?: string): Promise<{ removed: number }> {
+      const registry = await this.load();
+      const before = registry.packs.length;
+
+      registry.packs = version
+        ? registry.packs.filter((p) => !(p.id === id && p.version === version))
+        : registry.packs.filter((p) => p.id !== id);
+
+      const removed = before - registry.packs.length;
+      if (removed > 0) await this.save(registry);
+      return { removed };
     },
   };
 }

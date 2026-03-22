@@ -97,6 +97,116 @@ describe("RegistryService", () => {
     await expect(svc.load()).rejects.toMatchObject({ code: "REGISTRY_INVALID" });
   });
 
+  it("registerPack() throws REGISTRY_DUPLICATE_HASH if same hash, different id", async () => {
+    const dir = await makeTempDir();
+    const registryPath = join(dir, "registry.json");
+    const svc = createRegistryService({ registryPath });
+
+    await svc.registerPack({
+      id: "pack-a",
+      version: "1.0.0",
+      source: "local:/packs/pack-a",
+      integrityHash: "SHARED_HASH",
+    });
+
+    await expect(
+      svc.registerPack({
+        id: "pack-b",
+        version: "1.0.0",
+        source: "local:/packs/pack-b",
+        integrityHash: "SHARED_HASH",
+      }),
+    ).rejects.toMatchObject({ code: "REGISTRY_DUPLICATE_HASH" });
+  });
+
+  it("getPack() without version returns highest semver", async () => {
+    const dir = await makeTempDir();
+    const registryPath = join(dir, "registry.json");
+    const svc = createRegistryService({ registryPath });
+
+    await svc.registerPack({
+      id: "baseline",
+      version: "0.1.0",
+      source: "local:/a",
+      integrityHash: "H1",
+    });
+    await svc.registerPack({
+      id: "baseline",
+      version: "0.3.0",
+      source: "local:/b",
+      integrityHash: "H2",
+    });
+    await svc.registerPack({
+      id: "baseline",
+      version: "0.2.0",
+      source: "local:/c",
+      integrityHash: "H3",
+    });
+
+    const latest = await svc.getPack("baseline");
+    expect(latest?.version).toBe("0.3.0");
+  });
+
+  it("removePack() removes all versions if version omitted", async () => {
+    const dir = await makeTempDir();
+    const registryPath = join(dir, "registry.json");
+    const svc = createRegistryService({ registryPath });
+
+    await svc.registerPack({
+      id: "baseline",
+      version: "0.1.0",
+      source: "local:/a",
+      integrityHash: "H1",
+    });
+    await svc.registerPack({
+      id: "baseline",
+      version: "0.2.0",
+      source: "local:/b",
+      integrityHash: "H2",
+    });
+
+    const { removed } = await svc.removePack("baseline");
+    expect(removed).toBe(2);
+
+    const reg = await svc.load();
+    expect(reg.packs).toHaveLength(0);
+  });
+
+  it("removePack() removes only the specified version", async () => {
+    const dir = await makeTempDir();
+    const registryPath = join(dir, "registry.json");
+    const svc = createRegistryService({ registryPath });
+
+    await svc.registerPack({
+      id: "baseline",
+      version: "0.1.0",
+      source: "local:/a",
+      integrityHash: "H1",
+    });
+    await svc.registerPack({
+      id: "baseline",
+      version: "0.2.0",
+      source: "local:/b",
+      integrityHash: "H2",
+    });
+
+    const { removed } = await svc.removePack("baseline", "0.1.0");
+    expect(removed).toBe(1);
+
+    const reg = await svc.load();
+    expect(reg.packs).toHaveLength(1);
+    expect(reg.packs[0]?.version).toBe("0.2.0");
+  });
+
+  it("removePack() returns 0 if pack not found", async () => {
+    const dir = await makeTempDir();
+    const registryPath = join(dir, "registry.json");
+    const svc = createRegistryService({ registryPath });
+
+    const { removed } = await svc.removePack("nonexistent");
+    expect(removed).toBe(0);
+  });
+
   it("save() writes pretty JSON with newline", async () => {
     const dir = await makeTempDir();
     const registryPath = join(dir, "registry.json");

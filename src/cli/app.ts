@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { doctorCommand } from "./commands/doctor.js";
 import { generateCommand } from "./commands/generate.js";
 import { initCommand } from "./commands/init.js";
+import { packCommand } from "./commands/pack.js";
 
 declare const __BOOTCRAFT_VERSION__: string;
 
@@ -16,6 +17,7 @@ export function createApp(): Command {
   program.addCommand(initCommand());
   program.addCommand(generateCommand());
   program.addCommand(doctorCommand());
+  program.addCommand(packCommand());
 
   program.action(() => {
     program.help();
