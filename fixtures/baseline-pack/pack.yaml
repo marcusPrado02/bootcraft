@@ -5,3 +5,25 @@ pack:
 archetypes:
   - id: default
     templateRoot: templates
+    variables:
+      - name: projectName
+        type: string
+        required: true
+        description: "Service name (kebab-case, e.g. order-service)"
+      - name: projectDescription
+        type: string
+        required: true
+        description: "One-line description of the service"
+    capabilities:
+      - id: health-endpoint
+        name: Health Endpoint
+        description: "/health and /ready HTTP handlers"
+        default: true
+      - id: graceful-shutdown
+        name: Graceful Shutdown
+        description: "SIGTERM/SIGINT handler that drains in-flight requests"
+        default: true
+      - id: structured-logging
+        name: Structured Logging
+        description: "Zero-dependency JSON logger to stdout"
+        default: true

@@ -83,7 +83,9 @@ describe("bootcraft init (E2E)", () => {
   });
 
   it("creates docs with ADR and OpenAPI", async () => {
-    expect(await pathExists(join(outDir, "docs", "architecture", "ADR-0001-initial-architecture.md"))).toBe(true);
+    expect(
+      await pathExists(join(outDir, "docs", "architecture", "ADR-0001-initial-architecture.md")),
+    ).toBe(true);
     expect(await pathExists(join(outDir, "docs", "api", "openapi.yaml"))).toBe(true);
   });
 
@@ -123,6 +125,7 @@ describe("bootcraft doctor after init (E2E)", () => {
       outDir,
       variables: {
         projectName: "doctor-pass-service",
+        projectDescription: "E2E test service",
         serviceName: "doctor-pass-service",
       },
     });
@@ -134,7 +137,9 @@ describe("bootcraft doctor after init (E2E)", () => {
 
     const failing = report.results.filter((r) => r.status === "FAIL");
     if (failing.length > 0) {
-      const details = failing.map((r) => `  ❌ ${r.id}: ${r.description}\n     ${r.hint}`).join("\n");
+      const details = failing
+        .map((r) => `  ❌ ${r.id}: ${r.description}\n     ${r.hint}`)
+        .join("\n");
       throw new Error(`Doctor failed with ${failing.length} check(s):\n${details}`);
     }
 
@@ -180,7 +185,11 @@ describe("bootcraft doctor failure cases (E2E)", () => {
     await init.init({
       packPath: BASELINE_PACK,
       outDir,
-      variables: { projectName: "dry-test", serviceName: "dry-test" },
+      variables: {
+        projectName: "dry-test",
+        projectDescription: "Dry run test",
+        serviceName: "dry-test",
+      },
       dryRun: true,
     });
 

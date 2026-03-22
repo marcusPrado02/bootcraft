@@ -1,0 +1,33 @@
+pack:
+  name: persistence-postgres
+  version: 1.0.0
+
+archetypes:
+  - id: default
+    templateRoot: templates
+    variables:
+      - name: projectName
+        type: string
+        required: true
+        description: "Service name (used to scope DB config)"
+      - name: dbName
+        type: string
+        required: true
+        description: "PostgreSQL database name (e.g. orders_db)"
+    capabilities:
+      - id: postgres-connection
+        name: PostgreSQL Connection Pool
+        description: "pg pool with health-check and graceful teardown"
+        default: true
+      - id: repository-pattern
+        name: Repository Pattern
+        description: "Generic repository interface and base implementation"
+        default: true
+      - id: migrations
+        name: Migrations Folder
+        description: "migrations/ directory with README conventions"
+        default: true
+      - id: integration-test-helper
+        name: Integration Test Helper
+        description: "Utility to spin up isolated DB schema per test suite"
+        default: true

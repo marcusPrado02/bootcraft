@@ -1,0 +1,25 @@
+pack:
+  name: docs-openapi
+  version: 1.0.0
+
+archetypes:
+  - id: default
+    templateRoot: templates
+    variables:
+      - name: projectName
+        type: string
+        required: true
+        description: "Service name"
+      - name: projectDescription
+        type: string
+        required: true
+        description: "One-line description for the API info block"
+    capabilities:
+      - id: openapi-spec
+        name: OpenAPI Specification
+        description: "docs/api/openapi.yaml with health paths pre-filled"
+        default: true
+      - id: adr-template
+        name: ADR Template
+        description: "docs/architecture/ADR-TEMPLATE.md for documenting decisions"
+        default: true

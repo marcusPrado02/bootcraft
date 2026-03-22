@@ -1,0 +1,33 @@
+pack:
+  name: stack-typescript-node
+  version: 1.0.0
+
+archetypes:
+  - id: minimal
+    templateRoot: templates/minimal
+    variables:
+      - name: projectName
+        type: string
+        required: true
+        description: "Service name (kebab-case)"
+      - name: nodeVersion
+        type: string
+        default: "20"
+        description: "Node.js major version"
+    capabilities:
+      - id: typescript
+        name: TypeScript
+        description: "Strict TypeScript compilation with tsup bundler"
+        default: true
+      - id: eslint
+        name: ESLint + Prettier
+        description: "Linting and formatting"
+        default: true
+      - id: vitest
+        name: Vitest
+        description: "Fast unit test runner"
+        default: true
+      - id: github-actions-ci
+        name: GitHub Actions CI
+        description: "CI pipeline: install, build, lint, test"
+        default: true
