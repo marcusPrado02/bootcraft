@@ -23,6 +23,7 @@ export function initCommand(): Command {
       return acc;
     }, [] as string[])
     .option("--force", "Allow init into non-empty dir and overwrite files", false)
+    .option("--dry-run", "Preview files that would be written without touching the filesystem", false)
     .option("--verbose", "Show detailed progress output", false)
     .option("--debug", "Show debug-level output (implies --verbose)", false)
     .action(async (opts) => {
@@ -48,6 +49,12 @@ export function initCommand(): Command {
       const logger = createCliLogger(resolveLogLevel(opts));
       const init = createInitService({ logger });
 
+      const dryRun = Boolean(opts.dryRun);
+
+      if (dryRun) {
+        console.log("[bootcraft] dry-run mode — no files will be written\n");
+      }
+
       try {
         const res = await init.init({
           packPath,
@@ -55,7 +62,13 @@ export function initCommand(): Command {
           archetypeId,
           variables,
           force: Boolean(opts.force),
+          dryRun,
         });
+
+        if (dryRun) {
+          console.log("\n[bootcraft] dry-run complete — run without --dry-run to apply");
+          return;
+        }
 
         console.log("[bootcraft] init OK");
         console.log(`- project: ${res.projectDir}`);

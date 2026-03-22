@@ -13,6 +13,9 @@ export interface InitParams {
 
   /** If true, allows writing into a non-empty directory and overwriting files */
   force?: boolean;
+
+  /** If true, no files are written; logs what would be written instead */
+  dryRun?: boolean;
 }
 
 export interface InitResult {

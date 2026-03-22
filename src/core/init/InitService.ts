@@ -64,6 +64,7 @@ export function createInitService(options: InitServiceOptions = {}): InitService
     async init(params: InitParams): Promise<InitResult> {
       const projectDir = resolve(params.outDir);
       const force = Boolean(params.force);
+      const dryRun = Boolean(params.dryRun);
 
       await ensureEmptyOrForce(projectDir, force);
 
@@ -141,6 +142,7 @@ export function createInitService(options: InitServiceOptions = {}): InitService
           templateRoot: templateRootAbs,
           destRelDir: ".", // project root
           force,
+          dryRun,
         }),
       ];
 

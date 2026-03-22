@@ -12,6 +12,7 @@ export interface ApplyTemplatesStepParams {
    */
   destRelDir?: string;
   force?: boolean;
+  dryRun?: boolean;
 }
 
 export function applyTemplatesStep(
@@ -25,11 +26,18 @@ export function applyTemplatesStep(
     name: "Applying templates",
     async run(ctx) {
       const destDir = resolve(ctx.projectDir, params.destRelDir ?? ".");
+      const dryRun = Boolean(params.dryRun);
       await engine.render({
         templateRoot: params.templateRoot,
         destDir,
         variables: ctx.variables,
-        options: { force: Boolean(params.force) },
+        options: {
+          force: Boolean(params.force),
+          dryRun,
+          onFile: dryRun
+            ? (rel) => ctx.logger.info(`  [dry-run] would write: ${rel}`)
+            : undefined,
+        },
       });
     },
   };

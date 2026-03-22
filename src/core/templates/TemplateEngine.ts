@@ -12,6 +12,19 @@ export interface TemplateRenderOptions {
   force?: boolean;
 
   /**
+   * If true, no files are written. onFile is called for each file
+   * that would be written, allowing the caller to report them.
+   */
+  dryRun?: boolean;
+
+  /**
+   * Called for each file that would be written.
+   * In dry-run mode this replaces the actual write.
+   * In normal mode this is called after each successful write.
+   */
+  onFile?: (relPath: string, action: "write" | "skip") => void;
+
+  /**
    * Optional ignore matcher override (mainly for tests).
    */
   ignoreMatcher?: { shouldIgnore(relPathPosix: string): boolean };
@@ -131,15 +144,25 @@ export function createTemplateEngine(): TemplateEngine {
         );
       }
 
+      const dryRun = Boolean(options?.dryRun);
+      const onFile = options?.onFile;
       const ignoreMatcher = options?.ignoreMatcher ?? (await loadIgnoreMatcher(root));
       const files = await walk(root, root);
 
       for (const absPath of files) {
         const rel = toPosixPath(relative(root, absPath));
         if (rel === ".bootcraftignore") continue; // never copy ignore file
-        if (ignoreMatcher.shouldIgnore(rel)) continue;
+        if (ignoreMatcher.shouldIgnore(rel)) {
+          onFile?.(rel, "skip");
+          continue;
+        }
 
         const target = join(out, rel);
+
+        if (dryRun) {
+          onFile?.(rel, "write");
+          continue;
+        }
 
         const buf = await readFile(absPath);
         const treatAsText = isTextFileByExtension(rel) && !looksBinary(buf);
@@ -150,6 +173,7 @@ export function createTemplateEngine(): TemplateEngine {
         } else {
           await writeFileSafe(target, buf, force);
         }
+        onFile?.(rel, "write");
       }
     },
   };

@@ -1,53 +1,7 @@
-packId: baseline
-version: 0.1.0
-name: Baseline Pack
-description: >
-  Estrutura Clean Architecture + Hexagonal obrigatória para todo projeto Bootcraft.
-  Gera o esqueleto de pastas, configurações raiz, health endpoint e decisões iniciais.
+pack:
+  name: baseline
+  version: 0.1.0
 
-templateRoot: templates
-
-variables:
-  - name: projectName
-    type: string
-    required: true
-    description: "Nome do serviço em kebab-case (ex: my-service)"
-  - name: projectDescription
-    type: string
-    required: false
-    default: "A service bootstrapped with Bootcraft"
-    description: "Descrição curta do serviço"
-  - name: nodeVersion
-    type: string
-    required: false
-    default: "20"
-    description: "Versão do Node.js"
-  - name: authorName
-    type: string
-    required: false
-    default: ""
-    description: "Nome do autor/time"
-
-capabilities:
-  - id: health-endpoint
-    name: Health Endpoint
-    description: "Gera endpoints /health e /ready para liveness e readiness probes"
-    default: true
-  - id: graceful-shutdown
-    name: Graceful Shutdown
-    description: "Adiciona hooks de shutdown seguro na inicialização"
-    default: true
-  - id: structured-logging
-    name: Structured Logging
-    description: "Configura logging JSON estruturado"
-    default: true
-
-presets:
-  minimal:
-    description: "Estrutura mínima sem ferramentas extras"
-    variables:
-      nodeVersion: "20"
-  full:
-    description: "Estrutura completa com todas as capabilities"
-    variables:
-      nodeVersion: "20"
+archetypes:
+  - id: default
+    templateRoot: templates
