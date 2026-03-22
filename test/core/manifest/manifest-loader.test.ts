@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -22,6 +22,7 @@ archetypes:
 describe("ManifestLoader", () => {
   it("loads pack.yaml and validates schema", async () => {
     const dir = await makeTempDir();
+    await mkdir(join(dir, "templates", "service"), { recursive: true });
     await writeFile(join(dir, "pack.yaml"), VALID_PACK_YAML, "utf-8");
 
     const loader = createManifestLoader();
@@ -36,6 +37,7 @@ describe("ManifestLoader", () => {
 
   it("loads archetype.yaml when pack.yaml is missing", async () => {
     const dir = await makeTempDir();
+    await mkdir(join(dir, "templates", "service"), { recursive: true });
     await writeFile(join(dir, "archetype.yaml"), VALID_PACK_YAML, "utf-8");
 
     const loader = createManifestLoader();
@@ -43,6 +45,17 @@ describe("ManifestLoader", () => {
 
     expect(manifest.kind).toBe("archetype");
     expect(manifest.pack.name).toBe("baseline");
+  });
+
+  it("throws MANIFEST_TEMPLATE_ROOT_MISSING when templateRoot directory does not exist", async () => {
+    const dir = await makeTempDir();
+    // Do NOT create templates/service — intentionally missing
+    await writeFile(join(dir, "pack.yaml"), VALID_PACK_YAML, "utf-8");
+
+    const loader = createManifestLoader();
+    await expect(loader.load(dir)).rejects.toMatchObject({
+      code: "MANIFEST_TEMPLATE_ROOT_MISSING",
+    });
   });
 
   it("throws a clear error if no manifest exists", async () => {
@@ -68,6 +81,7 @@ describe("ManifestLoader", () => {
 
   it("loads manifest with variables, capabilities, and steps declarations", async () => {
     const dir = await makeTempDir();
+    await mkdir(join(dir, "templates"), { recursive: true });
     const yaml = `
 pack:
   name: full-pack

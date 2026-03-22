@@ -52,7 +52,7 @@ describe("PackResolver (local)", () => {
     const registryPath = join(dir, "registry.json");
     const packDir = join(dir, "pack");
 
-    await mkdir(packDir, { recursive: true });
+    await mkdir(join(packDir, "templates", "service"), { recursive: true });
     await writeFile(join(packDir, "pack.yaml"), VALID_PACK_YAML, "utf-8");
     await writeFile(join(packDir, "a.txt"), "one", "utf-8");
 
@@ -72,7 +72,7 @@ describe("PackResolver (local)", () => {
     const registryPath = join(dir, "registry.json");
     const packDir = join(dir, "pack");
 
-    await mkdir(packDir, { recursive: true });
+    await mkdir(join(packDir, "templates", "service"), { recursive: true });
     await writeFile(join(packDir, "pack.yaml"), VALID_PACK_YAML, "utf-8");
     await writeFile(join(packDir, "a.txt"), "stable", "utf-8");
 
@@ -96,7 +96,7 @@ describe("PackResolver (local)", () => {
     const registryPath = join(dir, "registry.json");
     const packDir = join(dir, "pack");
 
-    await mkdir(packDir, { recursive: true });
+    await mkdir(join(packDir, "templates", "service"), { recursive: true });
     await writeFile(join(packDir, "pack.yaml"), VALID_PACK_YAML, "utf-8");
     await writeFile(join(packDir, "a.txt"), "x", "utf-8");
 

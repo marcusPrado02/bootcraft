@@ -35,7 +35,7 @@ function detectKind(fileName: string): ManifestKind {
 
 function formatZodIssues(
   filePath: string,
-  issues: { path: (string | number)[]; message: string }[]
+  issues: { path: (string | number)[]; message: string }[],
 ): string {
   const lines = issues.map((i) => {
     const p = i.path.length ? i.path.join(".") : "<root>";
@@ -64,7 +64,7 @@ export function createManifestLoader(): ManifestLoader {
       if (!manifestPath || !manifestFileName) {
         throw new BootcraftError(
           "MANIFEST_NOT_FOUND",
-          `No manifest found in ${root}. Expected one of: ${MANIFEST_CANDIDATES.join(", ")}`
+          `No manifest found in ${root}. Expected one of: ${MANIFEST_CANDIDATES.join(", ")}`,
         );
       }
 
@@ -76,7 +76,7 @@ export function createManifestLoader(): ManifestLoader {
         throw new BootcraftError(
           "MANIFEST_READ_FAILED",
           `Failed to read manifest: ${manifestPath}`,
-          nodeErr instanceof Error ? nodeErr : undefined
+          nodeErr instanceof Error ? nodeErr : undefined,
         );
       }
 
@@ -87,7 +87,7 @@ export function createManifestLoader(): ManifestLoader {
         throw new BootcraftError(
           "MANIFEST_YAML_INVALID",
           `Invalid YAML in manifest: ${manifestPath}`,
-          err instanceof Error ? err : undefined
+          err instanceof Error ? err : undefined,
         );
       }
 
@@ -99,10 +99,18 @@ export function createManifestLoader(): ManifestLoader {
             path: issue.path as (string | number)[],
             message: issue.message,
           }));
-        throw new BootcraftError(
-          "MANIFEST_SCHEMA_INVALID",
-          formatZodIssues(manifestPath, issues)
-        );
+        throw new BootcraftError("MANIFEST_SCHEMA_INVALID", formatZodIssues(manifestPath, issues));
+      }
+
+      // Validate that each archetype's templateRoot exists on disk
+      for (const archetype of result.data.archetypes) {
+        const templateRootAbs = join(root, archetype.templateRoot);
+        if (!(await fileExists(templateRootAbs))) {
+          throw new BootcraftError(
+            "MANIFEST_TEMPLATE_ROOT_MISSING",
+            `Archetype "${archetype.id}" declares templateRoot "${archetype.templateRoot}" but the directory does not exist: ${templateRootAbs}`,
+          );
+        }
       }
 
       return {
