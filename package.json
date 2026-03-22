@@ -15,7 +15,19 @@
     "format": "prettier -w .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "bootcraft": "node dist/index.js"
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "bootcraft": "node dist/index.js",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,yaml,yml,md}": [
+      "prettier --write"
+    ]
   },
   "keywords": [],
   "author": "",
@@ -30,7 +42,10 @@
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@types/node": "^25.0.10",
+    "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^9.39.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.8.1",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",

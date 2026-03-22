@@ -11,5 +11,25 @@ export default defineConfig({
   },
   test: {
     include: ["test/**/*.test.ts"],
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.ts"],
+      exclude: [
+        // Entry point
+        "src/index.ts",
+        // Barrel re-export files — covered implicitly via importers
+        "src/**/index.ts",
+        // CLI layer — covered by E2E/integration tests, not unit tests
+        "src/cli/**",
+        // Type-only files
+        "src/**/types.ts",
+      ],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 65,
+        statements: 80,
+      },
+    },
   },
 });
