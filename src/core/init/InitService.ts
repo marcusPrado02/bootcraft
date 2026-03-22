@@ -6,7 +6,7 @@ import { createPackResolver, type PackResolver } from "../packs/PackResolver.js"
 import { createGenerator, type Generator } from "../generator/Generator.js";
 import { applyTemplatesStep } from "../generator/steps/applyTemplates.js";
 import type { Step } from "../generator/types.js";
-import type { VariableDeclaration } from "../manifest/schemas.js";
+import { resolveVariables } from "../generate/variables.js";
 
 import type { InitParams, InitResult } from "./types.js";
 
@@ -53,46 +53,6 @@ async function ensureEmptyOrForce(dir: string, force: boolean): Promise<void> {
 
 function nowIso(): string {
   return new Date().toISOString();
-}
-
-/**
- * Validates and enriches provided variables against manifest declarations.
- *
- * - Fills in declared defaults for missing optional variables
- * - Throws INIT_FAILED if any required variable is not provided
- *
- * Returns the merged variable map.
- */
-function resolveVariables(
-  declared: VariableDeclaration[] | undefined,
-  provided: Record<string, string>,
-): Record<string, string> {
-  if (!declared || declared.length === 0) return provided;
-
-  const result = { ...provided };
-  const missing: string[] = [];
-
-  for (const decl of declared) {
-    if (Object.prototype.hasOwnProperty.call(result, decl.name)) continue;
-
-    if (decl.default !== undefined) {
-      result[decl.name] = decl.default;
-      continue;
-    }
-
-    if (decl.required) {
-      missing.push(decl.name);
-    }
-  }
-
-  if (missing.length > 0) {
-    throw new BootcraftError(
-      "INIT_FAILED",
-      `Missing required template variables: ${missing.map((n) => `-D ${n}=<value>`).join(", ")}`,
-    );
-  }
-
-  return result;
 }
 
 export function createInitService(options: InitServiceOptions = {}): InitService {

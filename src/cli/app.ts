@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { doctorCommand } from "./commands/doctor.js";
+import { generateCommand } from "./commands/generate.js";
 import { initCommand } from "./commands/init.js";
 
 declare const __BOOTCRAFT_VERSION__: string;
@@ -12,8 +13,8 @@ export function createApp(): Command {
     .description("Golden path enforcer: bootstrap projetos completos e maduros.")
     .version(__BOOTCRAFT_VERSION__);
 
-
   program.addCommand(initCommand());
+  program.addCommand(generateCommand());
   program.addCommand(doctorCommand());
 
   program.action(() => {
