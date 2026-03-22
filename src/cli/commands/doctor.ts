@@ -9,15 +9,17 @@ export function doctorCommand(): Command {
   return new Command("doctor")
     .description("Validate a Bootcraft-generated project against baseline requirements.")
     .option("-p, --path <dir>", "Project directory (default: cwd)", process.cwd())
+    .option("--fix", "Auto-fix checks that support it (e.g. create missing directories)", false)
     .option("--verbose", "Show detailed output", false)
     .option("--debug", "Show debug-level output (implies --verbose)", false)
     .action(async (opts) => {
-      const _logLevel = resolveLogLevel(opts); // reserved for future use
+      resolveLogLevel(opts); // reserved for future use
       const dir = resolve(String(opts.path));
+      const fix = Boolean(opts.fix);
       const doctor = createDoctorService();
 
       try {
-        const report = await doctor.run({ projectDir: dir });
+        const report = await doctor.run({ projectDir: dir, fix });
 
         const okCount = report.results.filter((r) => r.status === "PASS").length;
         const failCount = report.results.length - okCount;
