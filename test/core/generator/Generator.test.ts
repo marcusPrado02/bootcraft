@@ -16,8 +16,18 @@ describe("Generator", () => {
     const projectDir = await makeTempDir("bootcraft-gen-");
 
     const order: string[] = [];
-    const s1: Step = { id: "s1", async run() { order.push("s1"); } };
-    const s2: Step = { id: "s2", async run() { order.push("s2"); } };
+    const s1: Step = {
+      id: "s1",
+      async run() {
+        order.push("s1");
+      },
+    };
+    const s2: Step = {
+      id: "s2",
+      async run() {
+        order.push("s2");
+      },
+    };
 
     const gen = createGenerator({ logger: { info() {}, warn() {}, error() {} } });
 
@@ -31,8 +41,15 @@ describe("Generator", () => {
     // .bootcraft/state.json should exist now
     const raw = await readFile(join(projectDir, ".bootcraft", "state.json"), "utf-8");
     const parsed = JSON.parse(raw);
-    expect(parsed.schemaVersion).toBe("0.1");
-    expect(state.schemaVersion).toBe("0.1");
+    expect(parsed.schemaVersion).toBe("0.2");
+    expect(state.schemaVersion).toBe("0.2");
+
+    // Step history should record both steps
+    expect(state.stepHistory).toHaveLength(2);
+    expect(state.stepHistory?.[0]?.stepId).toBe("s1");
+    expect(state.stepHistory?.[0]?.outcome).toBe("success");
+    expect(state.stepHistory?.[1]?.stepId).toBe("s2");
+    expect(state.stepHistory?.[1]?.outcome).toBe("success");
   });
 
   it("fails with GENERATOR_STEP_FAILED when a step throws", async () => {
@@ -47,9 +64,7 @@ describe("Generator", () => {
 
     const gen = createGenerator({ logger: { info() {}, warn() {}, error() {} } });
 
-    await expect(
-      gen.run({ projectDir, variables: {}, steps: [bad] })
-    ).rejects.toMatchObject({
+    await expect(gen.run({ projectDir, variables: {}, steps: [bad] })).rejects.toMatchObject({
       name: "BootcraftError",
       code: "GENERATOR_STEP_FAILED",
     });
@@ -62,7 +77,7 @@ describe("Generator", () => {
     await writeFile(
       join(projectDir, "package.json"),
       JSON.stringify({ name: "x", scripts: { test: "old" }, arr: [1, 2] }, null, 2),
-      "utf-8"
+      "utf-8",
     );
 
     const gen = createGenerator({ logger: { info() {}, warn() {}, error() {} } });

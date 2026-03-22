@@ -118,6 +118,7 @@ export function createInitService(options: InitServiceOptions = {}): InitService
             (p) => p.id === resolvedPack.id && p.version === resolvedPack.version,
           );
           if (!exists) {
+            const capabilities = (chosen.capabilities ?? []).map((c) => c.id);
             ctx.state.appliedPacks = [
               ...(ctx.state.appliedPacks ?? []),
               {
@@ -126,6 +127,7 @@ export function createInitService(options: InitServiceOptions = {}): InitService
                 source: resolvedPack.source,
                 integrityHash: resolvedPack.integrityHash,
                 appliedAt,
+                capabilities,
               },
             ];
           }

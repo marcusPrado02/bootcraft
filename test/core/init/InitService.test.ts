@@ -71,7 +71,7 @@ describe("InitService", () => {
     const stateRaw = await readFile(join(outDir, ".bootcraft", "state.json"), "utf-8");
     const state = JSON.parse(stateRaw);
 
-    expect(state.schemaVersion).toBe("0.1");
+    expect(state.schemaVersion).toBe("0.2");
     expect(state.appliedPacks.length).toBe(1);
     expect(state.appliedPacks[0].id).toBe("baseline");
     expect(state.decisions.init.archetypeId).toBe("service");

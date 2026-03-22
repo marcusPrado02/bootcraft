@@ -5,17 +5,14 @@
  * - Loading state (with graceful defaults when file is missing)
  * - Saving state atomically (temp file + rename)
  * - Versioned schema for forward compatibility
+ * - Automatic schema migration (0.1 → 0.2)
  */
 
 import { join } from "node:path";
 import { access, constants } from "node:fs/promises";
 import { atomicWriteFile, readJsonFile } from "../../infra/fs/index.js";
 import { BootcraftError } from "../errors/index.js";
-import {
-  BootcraftState,
-  CURRENT_SCHEMA_VERSION,
-  createDefaultState,
-} from "./types.js";
+import { type BootcraftState, CURRENT_SCHEMA_VERSION, createDefaultState } from "./types.js";
 
 /** Directory name for Bootcraft metadata */
 const BOOTCRAFT_DIR = ".bootcraft";
@@ -67,46 +64,75 @@ async function stateFileExists(projectDir: string): Promise<boolean> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Schema migration
+// ---------------------------------------------------------------------------
+
 /**
- * Validate that an object looks like a BootcraftState.
- * Does basic structural validation without being overly strict.
+ * Migrate a raw state object from any prior version to the current schema.
+ * Each migration step is additive — it only sets fields that are absent.
+ */
+function migrateState(raw: Record<string, unknown>): BootcraftState {
+  const version = raw["schemaVersion"];
+
+  // 0.1 → 0.2: add stepHistory field and capabilities per applied pack
+  if (version === "0.1") {
+    raw["stepHistory"] = [];
+
+    const packs = raw["appliedPacks"];
+    if (Array.isArray(packs)) {
+      raw["appliedPacks"] = packs.map((p: unknown) => {
+        if (typeof p === "object" && p !== null && !("capabilities" in p)) {
+          return { ...(p as object), capabilities: [] };
+        }
+        return p;
+      });
+    }
+
+    raw["schemaVersion"] = "0.2";
+  }
+
+  return raw as unknown as BootcraftState;
+}
+
+// ---------------------------------------------------------------------------
+// Validation
+// ---------------------------------------------------------------------------
+
+/**
+ * Validate that an object looks like a BootcraftState after migration.
  */
 function validateState(data: unknown, path: string): BootcraftState {
   if (typeof data !== "object" || data === null) {
-    throw new BootcraftError(
-      "STATE_INVALID",
-      `State file must contain a JSON object: ${path}`
-    );
+    throw new BootcraftError("STATE_INVALID", `State file must contain a JSON object: ${path}`);
   }
 
   const obj = data as Record<string, unknown>;
 
-  // Check required fields exist with correct types
-  if (typeof obj.schemaVersion !== "string") {
+  if (typeof obj["schemaVersion"] !== "string") {
     throw new BootcraftError(
       "STATE_INVALID",
-      `State file missing or invalid 'schemaVersion': ${path}`
+      `State file missing or invalid 'schemaVersion': ${path}`,
     );
   }
 
-  if (typeof obj.project !== "object" || obj.project === null) {
+  if (typeof obj["project"] !== "object" || obj["project"] === null) {
+    throw new BootcraftError("STATE_INVALID", `State file missing or invalid 'project': ${path}`);
+  }
+
+  if (!Array.isArray(obj["appliedPacks"])) {
     throw new BootcraftError(
       "STATE_INVALID",
-      `State file missing or invalid 'project': ${path}`
+      `State file missing or invalid 'appliedPacks': ${path}`,
     );
   }
 
-  if (!Array.isArray(obj.appliedPacks)) {
-    throw new BootcraftError(
-      "STATE_INVALID",
-      `State file missing or invalid 'appliedPacks': ${path}`
-    );
-  }
-
-  // Note: We intentionally don't validate schemaVersion value strictly,
-  // allowing future versions to be read (additive evolution)
-  return data as BootcraftState;
+  return migrateState(obj);
 }
+
+// ---------------------------------------------------------------------------
+// Factory
+// ---------------------------------------------------------------------------
 
 /**
  * Default StateStore implementation using the filesystem.
@@ -121,7 +147,7 @@ export function createStateStore(): StateStore {
         return createDefaultState();
       }
 
-      // File exists - read and validate it
+      // File exists - read, validate, and migrate if necessary
       const data = await readJsonFile<unknown>(statePath);
       return validateState(data, statePath);
     },

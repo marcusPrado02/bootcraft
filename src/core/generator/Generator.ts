@@ -43,7 +43,7 @@ export function createGenerator(options: GeneratorOptions = {}): Generator {
         throw new BootcraftError(
           "GENERATOR_FAILED",
           `Failed to load Bootcraft state for project: ${dir}`,
-          err instanceof Error ? err : undefined
+          err instanceof Error ? err : undefined,
         );
       }
 
@@ -59,16 +59,26 @@ export function createGenerator(options: GeneratorOptions = {}): Generator {
         const step = steps[i]!;
         const label = step.name ?? step.id;
         const prefix = `[${i + 1}/${total}]`;
+        const completedAt = new Date().toISOString();
         try {
           logger.info(`${prefix} ${label}...`);
           await step.run(ctx);
           logger.info(`${prefix} ${label} done`);
+
+          ctx.state.stepHistory = [
+            ...(ctx.state.stepHistory ?? []),
+            { stepId: step.id, name: step.name, completedAt, outcome: "success" },
+          ];
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
+          ctx.state.stepHistory = [
+            ...(ctx.state.stepHistory ?? []),
+            { stepId: step.id, name: step.name, completedAt, outcome: "failure", error: msg },
+          ];
           throw new BootcraftError(
             "GENERATOR_STEP_FAILED",
             `Step failed (${step.id}): ${msg}`,
-            err instanceof Error ? err : undefined
+            err instanceof Error ? err : undefined,
           );
         }
       }
@@ -88,7 +98,7 @@ export function createGenerator(options: GeneratorOptions = {}): Generator {
         throw new BootcraftError(
           "GENERATOR_FAILED",
           `Failed to save Bootcraft state for project: ${dir}`,
-          err instanceof Error ? err : undefined
+          err instanceof Error ? err : undefined,
         );
       }
 

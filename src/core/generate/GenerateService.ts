@@ -89,6 +89,7 @@ export function createGenerateService(options: GenerateServiceOptions = {}): Gen
             (p) => p.id === resolvedPack.id && p.version === resolvedPack.version,
           );
           if (!alreadyApplied) {
+            const capabilities = (chosen.capabilities ?? []).map((c) => c.id);
             ctx.state.appliedPacks = [
               ...(ctx.state.appliedPacks ?? []),
               {
@@ -97,6 +98,7 @@ export function createGenerateService(options: GenerateServiceOptions = {}): Gen
                 source: resolvedPack.source,
                 integrityHash: resolvedPack.integrityHash,
                 appliedAt,
+                capabilities,
               },
             ];
           }

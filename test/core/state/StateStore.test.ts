@@ -63,10 +63,7 @@ describe("StateStore", () => {
       };
 
       await mkdir(join(tempDir, ".bootcraft"), { recursive: true });
-      await writeFile(
-        getStatePath(tempDir),
-        JSON.stringify(existingState, null, 2)
-      );
+      await writeFile(getStatePath(tempDir), JSON.stringify(existingState, null, 2));
 
       const loaded = await store.load(tempDir);
 
@@ -94,10 +91,7 @@ describe("StateStore", () => {
 
     it("throws BootcraftError with STATE_INVALID for missing schemaVersion", async () => {
       await mkdir(join(tempDir, ".bootcraft"), { recursive: true });
-      await writeFile(
-        getStatePath(tempDir),
-        JSON.stringify({ project: {}, appliedPacks: [] })
-      );
+      await writeFile(getStatePath(tempDir), JSON.stringify({ project: {}, appliedPacks: [] }));
 
       await expect(store.load(tempDir)).rejects.toThrow(BootcraftError);
 
@@ -250,6 +244,65 @@ describe("StateStore", () => {
       // Verify second save worked
       const loaded = await store.load(tempDir);
       expect(loaded.project.name).toBe("second-name");
+    });
+  });
+
+  describe("schema migration", () => {
+    it("migrates 0.1 state to 0.2 by adding stepHistory and capabilities", async () => {
+      const v01State = {
+        schemaVersion: "0.1",
+        project: { createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z" },
+        decisions: {},
+        appliedPacks: [
+          {
+            id: "baseline",
+            version: "0.1.0",
+            source: "local:/packs/baseline",
+            integrityHash: "abc",
+            appliedAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+      };
+
+      await mkdir(join(tempDir, ".bootcraft"), { recursive: true });
+      await writeFile(getStatePath(tempDir), JSON.stringify(v01State, null, 2));
+
+      const loaded = await store.load(tempDir);
+
+      expect(loaded.schemaVersion).toBe("0.2");
+      expect(Array.isArray(loaded.stepHistory)).toBe(true);
+      expect(loaded.stepHistory).toHaveLength(0);
+      expect(loaded.appliedPacks[0]?.capabilities).toEqual([]);
+    });
+
+    it("does not re-migrate 0.2 state", async () => {
+      const v02State = {
+        schemaVersion: "0.2",
+        project: { createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z" },
+        decisions: {},
+        appliedPacks: [
+          {
+            id: "baseline",
+            version: "0.1.0",
+            source: "local:/packs/baseline",
+            integrityHash: "abc",
+            appliedAt: "2026-01-01T00:00:00.000Z",
+            capabilities: ["health-endpoint"],
+          },
+        ],
+        stepHistory: [
+          { stepId: "recordState", completedAt: "2026-01-01T00:00:01.000Z", outcome: "success" },
+        ],
+      };
+
+      await mkdir(join(tempDir, ".bootcraft"), { recursive: true });
+      await writeFile(getStatePath(tempDir), JSON.stringify(v02State, null, 2));
+
+      const loaded = await store.load(tempDir);
+
+      expect(loaded.schemaVersion).toBe("0.2");
+      expect(loaded.stepHistory).toHaveLength(1);
+      expect(loaded.appliedPacks[0]?.capabilities).toEqual(["health-endpoint"]);
     });
   });
 
