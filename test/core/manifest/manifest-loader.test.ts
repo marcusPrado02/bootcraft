@@ -66,6 +66,50 @@ describe("ManifestLoader", () => {
     });
   });
 
+  it("loads manifest with variables, capabilities, and steps declarations", async () => {
+    const dir = await makeTempDir();
+    const yaml = `
+pack:
+  name: full-pack
+  version: 1.0.0
+archetypes:
+  - id: default
+    templateRoot: templates
+    variables:
+      - name: projectName
+        type: string
+        required: true
+        description: "Project name"
+      - name: nodeVersion
+        type: string
+        required: false
+        default: "20"
+    capabilities:
+      - id: health-endpoint
+        name: Health Endpoint
+        default: true
+    steps:
+      - id: create-config
+        name: Create Config
+        capabilities:
+          - health-endpoint
+`;
+    await writeFile(join(dir, "pack.yaml"), yaml, "utf-8");
+
+    const loader = createManifestLoader();
+    const manifest = await loader.load(dir);
+
+    const archetype = manifest.archetypes[0]!;
+    expect(archetype.variables).toHaveLength(2);
+    expect(archetype.variables?.[0]?.name).toBe("projectName");
+    expect(archetype.variables?.[0]?.required).toBe(true);
+    expect(archetype.variables?.[1]?.default).toBe("20");
+    expect(archetype.capabilities).toHaveLength(1);
+    expect(archetype.capabilities?.[0]?.id).toBe("health-endpoint");
+    expect(archetype.steps).toHaveLength(1);
+    expect(archetype.steps?.[0]?.id).toBe("create-config");
+  });
+
   it("throws a clear error for schema violations with field paths", async () => {
     const dir = await makeTempDir();
     const invalid = `

@@ -6,6 +6,7 @@ import { createPackResolver, type PackResolver } from "../packs/PackResolver.js"
 import { createGenerator, type Generator } from "../generator/Generator.js";
 import { applyTemplatesStep } from "../generator/steps/applyTemplates.js";
 import type { Step } from "../generator/types.js";
+import type { VariableDeclaration } from "../manifest/schemas.js";
 
 import type { InitParams, InitResult } from "./types.js";
 
@@ -45,7 +46,7 @@ async function ensureEmptyOrForce(dir: string, force: boolean): Promise<void> {
   if (entries.length > 0 && !force) {
     throw new BootcraftError(
       "INIT_OUTPUT_NOT_EMPTY",
-      `Output directory is not empty: ${dir}. Use --force to proceed.`
+      `Output directory is not empty: ${dir}. Use --force to proceed.`,
     );
   }
 }
@@ -54,11 +55,49 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+/**
+ * Validates and enriches provided variables against manifest declarations.
+ *
+ * - Fills in declared defaults for missing optional variables
+ * - Throws INIT_FAILED if any required variable is not provided
+ *
+ * Returns the merged variable map.
+ */
+function resolveVariables(
+  declared: VariableDeclaration[] | undefined,
+  provided: Record<string, string>,
+): Record<string, string> {
+  if (!declared || declared.length === 0) return provided;
+
+  const result = { ...provided };
+  const missing: string[] = [];
+
+  for (const decl of declared) {
+    if (Object.prototype.hasOwnProperty.call(result, decl.name)) continue;
+
+    if (decl.default !== undefined) {
+      result[decl.name] = decl.default;
+      continue;
+    }
+
+    if (decl.required) {
+      missing.push(decl.name);
+    }
+  }
+
+  if (missing.length > 0) {
+    throw new BootcraftError(
+      "INIT_FAILED",
+      `Missing required template variables: ${missing.map((n) => `-D ${n}=<value>`).join(", ")}`,
+    );
+  }
+
+  return result;
+}
+
 export function createInitService(options: InitServiceOptions = {}): InitService {
   const packResolver = options.packResolver ?? createPackResolver();
-  const generator =
-    options.generator ??
-    createGenerator({ logger: options.logger });
+  const generator = options.generator ?? createGenerator({ logger: options.logger });
 
   return {
     async init(params: InitParams): Promise<InitResult> {
@@ -84,11 +123,14 @@ export function createInitService(options: InitServiceOptions = {}): InitService
           "INIT_FAILED",
           params.archetypeId
             ? `Archetype not found: ${params.archetypeId}. Available: ${available}`
-            : `No archetypes found in manifest for pack: ${resolvedPack.id}@${resolvedPack.version}`
+            : `No archetypes found in manifest for pack: ${resolvedPack.id}@${resolvedPack.version}`,
         );
       }
 
       const templateRootAbs = resolve(join(resolvedPack.rootPath, chosen.templateRoot));
+
+      // Validate and apply defaults for declared variables
+      const resolvedVars = resolveVariables(chosen.variables, params.variables);
 
       // Step 0: record decisions + applied pack into state
       const recordStateStep: Step = {
@@ -113,7 +155,7 @@ export function createInitService(options: InitServiceOptions = {}): InitService
 
           // appliedPacks (append if not already applied)
           const exists = ctx.state.appliedPacks?.some(
-            (p) => p.id === resolvedPack.id && p.version === resolvedPack.version
+            (p) => p.id === resolvedPack.id && p.version === resolvedPack.version,
           );
           if (!exists) {
             ctx.state.appliedPacks = [
@@ -149,7 +191,7 @@ export function createInitService(options: InitServiceOptions = {}): InitService
       try {
         await generator.run({
           projectDir,
-          variables: params.variables,
+          variables: resolvedVars,
           steps,
         });
 
@@ -159,7 +201,7 @@ export function createInitService(options: InitServiceOptions = {}): InitService
         throw new BootcraftError(
           "INIT_FAILED",
           `Failed to initialize project at: ${projectDir}`,
-          err instanceof Error ? err : undefined
+          err instanceof Error ? err : undefined,
         );
       }
     },
