@@ -7,11 +7,11 @@ const { version } = JSON.parse(readFileSync("./package.json", "utf-8")) as {
 
 export default defineConfig({
   entry: ["src/index.ts"],
-  format: ["cjs"],
+  format: ["cjs", "esm"],
   splitting: false,
   sourcemap: true,
   clean: true,
-  dts: false,
+  dts: true,
   target: "es2022",
   define: {
     __BOOTCRAFT_VERSION__: JSON.stringify(version),
