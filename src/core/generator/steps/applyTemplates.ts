@@ -22,6 +22,7 @@ export function applyTemplatesStep(
 
   return {
     id: `applyTemplates:${params.destRelDir ?? "."}`,
+    name: "Applying templates",
     async run(ctx) {
       const destDir = resolve(ctx.projectDir, params.destRelDir ?? ".");
       await engine.render({

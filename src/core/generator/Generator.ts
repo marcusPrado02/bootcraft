@@ -54,11 +54,15 @@ export function createGenerator(options: GeneratorOptions = {}): Generator {
         state,
       };
 
-      for (const step of steps) {
+      const total = steps.length;
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i]!;
+        const label = step.name ?? step.id;
+        const prefix = `[${i + 1}/${total}]`;
         try {
-          logger.info(`[bootcraft] step:start ${step.id}`);
+          logger.info(`${prefix} ${label}...`);
           await step.run(ctx);
-          logger.info(`[bootcraft] step:done  ${step.id}`);
+          logger.info(`${prefix} ${label} done`);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           throw new BootcraftError(

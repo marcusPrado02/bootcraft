@@ -17,5 +17,7 @@ export interface GenerationContext {
 export interface Step {
   /** Stable step id for logs and debugging */
   id: string;
+  /** Human-readable label shown in progress output */
+  name?: string;
   run(ctx: GenerationContext): Promise<void>;
 }

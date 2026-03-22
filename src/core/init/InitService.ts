@@ -89,6 +89,7 @@ export function createInitService(options: InitServiceOptions = {}): InitService
       // Step 0: record decisions + applied pack into state
       const recordStateStep: Step = {
         id: "recordState",
+        name: "Recording architectural decisions",
         async run(ctx) {
           const appliedAt = nowIso();
 
