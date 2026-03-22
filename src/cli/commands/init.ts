@@ -3,6 +3,7 @@ import { basename, resolve } from "node:path";
 
 import { BootcraftError } from "../../core/errors/index.js";
 import { createInitService } from "../../core/init/InitService.js";
+import { createCliLogger, resolveLogLevel } from "../output.js";
 
 function parseKeyValue(input: string): [string, string] {
   const idx = input.indexOf("=");
@@ -22,6 +23,8 @@ export function initCommand(): Command {
       return acc;
     }, [] as string[])
     .option("--force", "Allow init into non-empty dir and overwrite files", false)
+    .option("--verbose", "Show detailed progress output", false)
+    .option("--debug", "Show debug-level output (implies --verbose)", false)
     .action(async (opts) => {
       const outDir = resolve(String(opts.out));
       const packPath = resolve(String(opts.pack));
@@ -42,7 +45,8 @@ export function initCommand(): Command {
         variables[k] = v;
       }
 
-      const init = createInitService();
+      const logger = createCliLogger(resolveLogLevel(opts));
+      const init = createInitService({ logger });
 
       try {
         const res = await init.init({

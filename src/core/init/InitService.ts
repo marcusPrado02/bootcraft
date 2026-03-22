@@ -16,6 +16,7 @@ export interface InitService {
 export interface InitServiceOptions {
   packResolver?: PackResolver;
   generator?: Generator;
+  logger?: import("../generator/types.js").Logger;
 }
 
 async function pathExists(p: string): Promise<boolean> {
@@ -55,7 +56,9 @@ function nowIso(): string {
 
 export function createInitService(options: InitServiceOptions = {}): InitService {
   const packResolver = options.packResolver ?? createPackResolver();
-  const generator = options.generator ?? createGenerator();
+  const generator =
+    options.generator ??
+    createGenerator({ logger: options.logger });
 
   return {
     async init(params: InitParams): Promise<InitResult> {

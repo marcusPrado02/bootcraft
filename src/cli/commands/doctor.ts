@@ -3,12 +3,16 @@ import { resolve } from "node:path";
 
 import { BootcraftError } from "../../core/errors/index.js";
 import { createDoctorService } from "../../core/doctor/DoctorService.js";
+import { resolveLogLevel } from "../output.js";
 
 export function doctorCommand(): Command {
   return new Command("doctor")
     .description("Validate a Bootcraft-generated project against baseline requirements.")
     .option("-p, --path <dir>", "Project directory (default: cwd)", process.cwd())
+    .option("--verbose", "Show detailed output", false)
+    .option("--debug", "Show debug-level output (implies --verbose)", false)
     .action(async (opts) => {
+      const _logLevel = resolveLogLevel(opts); // reserved for future use
       const dir = resolve(String(opts.path));
       const doctor = createDoctorService();
 
